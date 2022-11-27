@@ -33,20 +33,22 @@ def main():
 
     # Set up responsive window
     resize_proxy = create_proxy(on_window_resize)
-    window.addEventListener('resize', resize_proxy) 
+    window.addEventListener('resize', resize_proxy)
+
     #-----------------------------------------------------------------------
-    # YOUR DESIGN / GEOMETRY GENERATION
+    # DESIGN / GEOMETRY GENERATION
     # Geometry Creation
-    global geom_params, cube, cube_lines, cylinders_x, cylinders_y, cylinder_lines
-    cubes = []
-    cube_lines = []
+    global geom_params, capsules_x, capsules_y, capsule_lines, cylinders_x, cylinders_y, cylinder_lines
+    capsules_x = []
+    capsules_y = []
+    capsule_lines = []
     # zwei weitere leere Listen anlegen
     cylinders_x = []
     cylinders_y = []
     cylinder_lines = []
 
     geom_params_cylinder = {
-        "radius_top_and_bottom": 5,
+        "radius": 5,
         "height": 20,
         "radial_segments": 32,
         "x": 2,
@@ -55,54 +57,100 @@ def main():
         "rotation_y": 0,
         "type": "cylinder"
     }
-    geom_params_cube = {
-        "size": 30,
-        "x": 2,
-        "rotation": 45,
-        "type": "cube"
+    geom_params_capsule = {
+        "radius": 10,
+        "length": 10,
+        "capSubdivisions": 10,
+        "x": 1,
+        "y": 1,
+        "radial_segments": 10,
+        "rotation_x": 0,
+        "rotation_y": 0,
+        "type": "capsule"
     }
-
-    # auskommentieren, je nachdem welches objekt wir wollen
-    geom_params = geom_params_cylinder
-    #geom_params = geom_params_cube
-
+    #-----------------------------------------------------------------------
+    # change the geometry here from capsules to cylinders 
+    #geom_params = geom_params_cylinder
+    geom_params = geom_params_capsule
+    #-----------------------------------------------------------------------
+    
     geom_params = Object.fromEntries(to_js(geom_params))
 
-    # create materials 
-    global material, line_material 
+
+    # create Materials
+    global material, line_material, color, color_lines, geometry, plane, light
+
     color = THREE.Color.new(255,255,255)
+    color_lines = THREE.Color.new(166,166,166)
     material = THREE.MeshBasicMaterial.new()
     material.transparent = True
-    material.opacity = 0.01
+    material.opacity = 0.5
+    
+    geometry = THREE.PlaneGeometry.new(2000, 2000)
+    geometry.rotateX(- math.pi / 2)
+
+    
+
+    #create a plane 
+
+    plane = THREE.Mesh.new(geometry, material)
+    plane.position.y = -200
+    plane.receiveShadow = True
+    scene.add(plane)
+
+    light = THREE.PointLight.new(0xff0000, 1, 100)
+    light.position.set(50, 50, 50)
+    scene.add(light)
 
     line_material = THREE.LineBasicMaterial.new()
-    line_material.color = color
+    line_material.color = color_lines
 
-    if geom_params.type == "cube":
-        # Generate the boxes using for loop
+    
+    #-----------------------------------------------------------------------
+    # parameters for capsule
+
+    if geom_params.type == "capsule":
+        
         for i in range (geom_params.x):
             # erstellt Außenmaße unserer Würfel,new braucht 2 werte um zu arbeiten
-            geom = THREE.BoxGeometry.new(geom_params.size, geom_params.size)
+            geom = THREE.CapsuleGeometry.new(geom_params.radius, geom_params.length, geom_params.capSubdivisions, geom_params.radial_segments)
 
-            geom.translate (geom_params.size*i,0,0)
-            geom.rotateX(math.radians(geom_params.rotation)/geom_params.x*i)
+            geom.translate (geom_params.radius*i*2,0,0)
+            geom.rotateX(math.radians(geom_params.rotation_x)/geom_params.x*i)
 
-            cube = THREE.Mesh.new(geom, material)
-            cubes.append(cube)
-            scene.add(cube)
+            capsule = THREE.Mesh.new(geom, material)
+            capsules_x.append(capsule)
+            scene.add(capsule)
 
-            #draw the cube lines
-            edges = THREE.EdgesGeometry.new(cube.geometry)
+            #draw the capsule lines
+            edges = THREE.EdgesGeometry.new(capsule.geometry)
             line = THREE.LineSegments.new(edges,line_material)
-            cube_lines.append(line)
+            capsule_lines.append(line)
             scene.add(line)
+            for j in range (geom_params.y):
+                #geom = THREE.CapsulaGeometry.new(geom_params.radius, geom_params.length, geom_params.capSubdivisions, geom_params.radial_segments)
 
+                geom.translate(0, 0, geom_params.radius*2)
+                geom.rotateX(math.radians(geom_params.rotation_y)/geom_params.y*j)
+
+                capsule = THREE.Mesh.new(geom, material)
+                capsules_y.append(capsule)
+                scene.add(capsule)
+
+                # draw the capsule lines
+                edges = THREE.EdgesGeometry.new(capsule.geometry)
+                line = THREE.LineSegments.new(edges,line_material)
+                capsule_lines.append(line)
+                scene.add(line)
+
+    #-----------------------------------------------------------------------
+    #parameters for cylinders 
     elif geom_params.type == "cylinder":
         # Generate the boxes using for loop
         for i in range (geom_params.x):
-            geom = THREE.CylinderGeometry.new(geom_params.radius_top_and_bottom, geom_params.radius_top_and_bottom, geom_params.height, geom_params.radial_segments)
+            geom = THREE.CylinderGeometry.new(geom_params.radius, geom_params.radius, geom_params.height, geom_params.radial_segments)
 
-            geom.translate(geom_params.radius_top_and_bottom*i*2,0,0)
+            geom.translate(geom_params.radius*i*2,0,0)
             geom.rotateX(math.radians(geom_params.rotation_x)/geom_params.x*i)
 
             cylinder = THREE.Mesh.new(geom, material)
@@ -116,9 +164,9 @@ def main():
             scene.add(line)
             # extend to second lane
             for j in range (geom_params.y):
-                #geom = THREE.CylinderGeometry.new(geom_params.radius_top_and_bottom, geom_params.radius_top_and_bottom, geom_params.height, geom_params.radial_segments)
+                #geom = THREE.CylinderGeometry.new(geom_params.radius, geom_params.radius, geom_params.height, geom_params.radial_segments)
 
-                geom.translate(0, 0, geom_params.radius_top_and_bottom*2)
+                geom.translate(0, 0, geom_params.radius*2)
                 geom.rotateX(math.radians(geom_params.rotation_y)/geom_params.y*j)
 
                 cylinder = THREE.Mesh.new(geom, material)
@@ -132,9 +180,8 @@ def main():
                 scene.add(line)
 
 
-
-
     #-----------------------------------------------------------------------
+
     # USER INTERFACE
     # Set up Mouse orbit control
     controls = THREE.OrbitControls.new(camera, renderer.domElement)
@@ -142,66 +189,100 @@ def main():
     # Set up GUI
     gui = window.dat.GUI.new()
     param_folder = gui.addFolder('Parameters')
-    # hier stellen wir ein, was der user an den würfeln verändern kann.
-    param_folder.add(geom_params, 'radius_top_and_bottom', 5, 100, 1)
+    # slider for changing the geometry.
+    param_folder.add(geom_params, 'radius', 5, 100, 1)
     param_folder.add(geom_params, 'x', 2, 10, 1)
     param_folder.add(geom_params, 'y', 2, 10, 1)
     param_folder.add(geom_params, 'rotation_x', 0, 270)
+    param_folder.add(geom_params, 'radial_segments',4,50)
     #param_folder.add(geom_params, 'rotation_y', 0, 270)
     param_folder.open()
     
     #-----------------------------------------------------------------------
     # RENDER + UPDATE THE SCENE AND GEOMETRIES
     render()
-    
+    # end of main 
 #-----------------------------------------------------------------------
 # HELPER FUNCTIONS
-#update the cubes 
-def update_cubes ():
-    global cubes, cube_lines, material, line_material
-    #make sure you dont have 0 cubes 
-
-    if len(cubes) != 0:
-        if len(cubes) != geom_params.x:
-            # alle vorhandenen cubes löschen
-            for cube in cubes: 
-                scene.remove(cube)
-            # alle vorhandenen lines löschen
-            for line in cube_lines: 
+#update the capsules
+def update_capsules ():
+    global capsules_x, capsules_y, capsule_lines, material, line_material
+     
+#make sure you dont have 0 capsules
+    if len(capsules_x) != 0 or len(capsules_y) != 0:
+        if len(capsules_x) != geom_params.x and len(capsules_y) != geom_params.y:
+            # delete all capsules
+            for capsule in capsules_x:
+                scene.remove(capsule)
+            for capsule in capsules_y:
+                scene.remove(capsule)
+            # delete all lines
+            for line in capsule_lines: 
                 scene.remove(line)
             
-            cubes = []
-            cube_lines = []
+            # capsules_x = []
+            # capsules_y = []
+            # capsule_lines = []
 
             for i in range (geom_params.x):
-                # setze den würfel in die GUI rein
-                geom = THREE.BoxGeometry.new(geom_params.size,geom_params.size)
-                geom.translate (geom_params.size*i,0,0)
-                geom.rotateX(math.radians(geom_params.rotation)/geom_params.x*i)
-                # erstelle würfel
-                cube = THREE.Mesh.new(geom, material)
-                cubes.append(cube)
-                scene.add(cube)
+                # place capsules into GUI
+                geom = THREE.CapsuleGeometry.new(geom_params.radius, geom_params.length, geom_params.capSubdivisions, geom_params.radial_segments)
+                geom.translate (geom_params.radius*2*i,0,0)
+                geom.rotateX(math.radians(geom_params.rotation_x)/geom_params.x*i)
+                # create capsules
+                capsule = THREE.Mesh.new(geom, material)
+                capsules_x.append(capsule)
+                scene.add(capsule)
 
-                #draw the cube lines
-                edges = THREE.EdgesGeometry.new(cube.geometry)
+                #draw the capsule lines
+                edges = THREE.EdgesGeometry.new(capsule.geometry)
                 line = THREE.LineSegments.new(edges,line_material)
-                cube_lines.append(line)
-                # setze den würfel in die scene
+                capsule_lines.append(line)
+                # place capsules in scene
                 scene.add(line)
-        else:
-            for i in range (len(cubes)):
-                cube = cubes[i]
-                line = cube_lines[i]
-                # setze den würfel in die GUI rein - sind schon da, werden nur neu ausgerichtet
-                geom = THREE.BoxGeometry.new(geom_params.size,geom_params.size,geom_params.size)
-                geom.translate (geom_params.size*i,0,0)
-                geom.rotateX(math.radians(geom_params.rotation)/geom_params.x*i)
+                for j in range(geom_params.y):
+                    #geom = THREE.CapsuleGeometry.new(geom_params.radius, geom_params.length, geom_params.capSubdivisions, geom_params.radial_segments)
 
-                cube.geometry = geom
-                
-                edges = THREE.EdgesGeometry.new(cube.geometry)
+                    geom.translate(0, 0, geom_params.radius * 2)
+                    geom.rotateX(math.radians(geom_params.rotation_y) / geom_params.y * j)
+
+                    capsule = THREE.Mesh.new(geom, material)
+                    capsules_y.append(capsule)
+                    scene.add(capsule)
+
+                    # draw the capsule lines
+                    edges = THREE.EdgesGeometry.new(capsule.geometry)
+                    line = THREE.LineSegments.new(edges, line_material)
+                    capsule_lines.append(line)
+                    scene.add(line)
+        else:
+            for i in range (len(capsules_x)):
+                capsule = capsules_x[i]
+                line = capsule_lines[i]
+                # place the capsule in GUI, are already there but are placedin a new way in x directon 
+                geom = THREE.CapsuleGeometry.new(geom_params.radius, geom_params.length, geom_params.capSubdivisions, geom_params.radial_segments)
+                geom.translate (geom_params.radius*2,0,0)
+                geom.rotateX(math.radians(geom_params.rotation_x)/geom_params.x*i)
+    
+                capsule.geometry = geom
+    
+                edges = THREE.EdgesGeometry.new(capsule.geometry)
                 line.geometry = edges
+                for j in range(len(capsules_y)):
+                    capsule = capsules_y[j]
+                    line = capsule_lines[len(capsules_x)+j]
+                    # place the capsule in GUI, are already there but are placedin a new way in y directon
+                    geom = THREE.CapsuleGeometry.new(geom_params.radius, geom_params.length, geom_params.capSubdivisions, geom_params.radial_segments)
+                    geom.translate(0,0, geom_params.radius * 2)
+                    geom.rotateX(math.radians(geom_params.rotation_y) / geom_params.y * j)
+
+                    capsule.geometry = geom
+
+                    edges = THREE.EdgesGeometry.new(capsule.geometry)
+                    line.geometry = edges
+
+
+#-----------------------------------------------------------------------           
 
 
 
@@ -212,12 +293,12 @@ def update_cylinders():
     #make sure you dont have 0 cylinders
     if len(cylinders_x) != 0 or len(cylinders_y) != 0:
         if len(cylinders_x) != geom_params.x and len(cylinders_y) != geom_params.y:
-            # alle vorhandenen cubes löschen
+            # delete all cylinders 
             for cylinder in cylinders_x:
                 scene.remove(cylinder)
             for cylinder in cylinders_y:
                 scene.remove(cylinder)
-            # alle vorhandenen lines löschen
+            # delete all lines 
             for line in cylinder_lines: 
                 scene.remove(line)
             
@@ -226,11 +307,11 @@ def update_cylinders():
             # cylinder_lines = []
 
             for i in range (geom_params.x):
-                # setze den zylinder in die GUI rein
-                geom = THREE.CylinderGeometry.new(geom_params.radius_top_and_bottom, geom_params.radius_top_and_bottom, geom_params.height, geom_params.radial_segments)
-                geom.translate (geom_params.radius_top_and_bottom*i*2,0,0)
+                # place the cylinder in GUI
+                geom = THREE.CylinderGeometry.new(geom_params.radius, geom_params.radius, geom_params.height, geom_params.radial_segments)
+                geom.translate (geom_params.radius*i*2,0,0)
                 geom.rotateX(math.radians(geom_params.rotation_x)/geom_params.x*i)
-                # erstelle Zylinder
+                # create cylinder 
                 cylinder = THREE.Mesh.new(geom, material)
                 cylinders_x.append(cylinder)
                 scene.add(cylinder)
@@ -239,13 +320,12 @@ def update_cylinders():
                 edges = THREE.EdgesGeometry.new(cylinder.geometry)
                 line = THREE.LineSegments.new(edges,line_material)
                 cylinder_lines.append(line)
-                # setze den cylinder in die scene
+                # place cylinder in scene 
                 scene.add(line)
                 for j in range(geom_params.y):
-                    #geom = THREE.CylinderGeometry.new(geom_params.radius_top_and_bottom, geom_params.radius_top_and_bottom,
-                    #                                  geom_params.height, geom_params.radial_segments)
-
-                    geom.translate(0, 0, geom_params.radius_top_and_bottom * 2)
+                    #geom = THREE.CylinderGeometry.new(geom_params.radius, geom_params.radius, geom_params.height, geom_params.radial_segments)
+                    
+                    geom.translate(0, 0, geom_params.radius * 2)
                     geom.rotateX(math.radians(geom_params.rotation_y) / geom_params.x * j)
 
                     cylinder = THREE.Mesh.new(geom, material)
@@ -261,9 +341,9 @@ def update_cylinders():
             for i in range (len(cylinders_x)):
                 cylinder = cylinders_x[i]
                 line = cylinder_lines[i]
-                # setze den würfel in die GUI rein - sind schon da, werden nur neu ausgerichtet
-                geom = THREE.CylinderGeometry.new(geom_params.radius_top_and_bottom, geom_params.radius_top_and_bottom, geom_params.height, geom_params.radial_segments)
-                geom.translate (geom_params.radius_top_and_bottom*i*2,0,0)
+                # place the capsule in GUI, are already there but are placedin a new way in x directon
+                geom = THREE.CylinderGeometry.new(geom_params.radius, geom_params.radius, geom_params.height, geom_params.radial_segments)
+                geom.translate (geom_params.radius*i*2,0,0)
                 geom.rotateX(math.radians(geom_params.rotation_x)/geom_params.x*i)
     
                 cylinder.geometry = geom
@@ -273,10 +353,10 @@ def update_cylinders():
                 for j in range(len(cylinders_y)):
                     cylinder = cylinders_y[j]
                     line = cylinder_lines[len(cylinders_x)+j]
-                    # setze den würfel in die GUI rein - sind schon da, werden nur neu ausgerichtet
-                    geom = THREE.CylinderGeometry.new(geom_params.radius_top_and_bottom, geom_params.radius_top_and_bottom,
+                    # place the capsule in GUI, are already there but are placedin a new way in y directon
+                    geom = THREE.CylinderGeometry.new(geom_params.radius, geom_params.radius,
                                                     geom_params.height, geom_params.radial_segments)
-                    geom.translate(0,0, geom_params.radius_top_and_bottom * 2)
+                    geom.translate(0,0, geom_params.radius * 2)
                     geom.rotateX(math.radians(geom_params.rotation_y) / geom_params.y * j)
 
                     cylinder.geometry = geom
@@ -291,7 +371,7 @@ def update_cylinders():
 def render(*args):
     window.requestAnimationFrame(create_proxy(render))
     update_cylinders()
-    #update_cubes()
+    update_capsules()
     controls.update()
     composer.render()
 

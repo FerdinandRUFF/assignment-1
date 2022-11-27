@@ -1,6 +1,6 @@
 # assignment-1
 
 
-Assignment 2 of Computerbasiertes Entwerfen. <br />
+Assignment 1 of Computerbasiertes Entwerfen. <br />
 Author: Ferdinand Ruff.<br />
-Description: A recursive tree creation that makes the user feel like they walk through an alley of trees. <br />
+Description: in my creation the user can modify two diiferent primitiv types of geometries. The user can change the amout of objects in x and y direction as well as their size, outlines and rotation of the objects.<br />
